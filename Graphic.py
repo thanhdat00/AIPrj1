@@ -1,5 +1,7 @@
 import pygame as p
 import GameEngine
+import time
+import Block
 
 class Graphic:
     WIDTH = HEIGHT = 512
@@ -7,24 +9,42 @@ class Graphic:
     SQ_SIZE = HEIGHT // DIMENSION
     MAX_SPF = 15
     IMAGES = {}
+    colors = [p.Color("white"), p.Color("gray")]
+    seekerRowPos = -1
+    seekerColPos = -1
+    direction = [[0,-1], [0,1], [-1,0], [1,0], [1,1],      [-1,1] ,        [-1,-1],  [1,-1]]
+                # 0.Left  1.Right 2.Down 3.Up   4.Down-Right 5.Up-Right   6.Up-Left   7.Down-Left
+    gs = None
 
-    def __init__(self):
+    def __init__(self, map, seekerRowPos, seekerColPos):
         p.init()
+        self.seekerRowPos = seekerRowPos
+        self.seekerColPos = seekerColPos
+        self.gs = GameEngine.GameState(map)
+        self.loadImage()
+
+
+    def run(self):
         screen = p.display.set_mode((self.WIDTH, self.HEIGHT))
         clock = p.time.Clock()
         screen.fill(p.Color("white"))
-        gs = GameEngine.GameState()
-        self.loadImage()
         running = True
+
         while running:
             for e in p.event.get():
                 if e.type == p.QUIT:
                     running = False
-            self.drawGameState(screen, gs)
+
+            self.drawGameState(screen, self.gs)
             clock.tick(self.MAX_SPF)
             p.display.flip()
+            time.sleep(0.5)
+
+
 
     def loadImage(self):
+
+
          pieces =['hider' , 'seeker', 'crate']
          for piece in pieces:
             self.IMAGES[piece] = p.transform.scale(p.image.load("Images/" + piece + ".png"), (self.SQ_SIZE, self.SQ_SIZE))
@@ -32,17 +52,17 @@ class Graphic:
 
 
     def drawBoard(self,screen):
-        colors = [p.Color("white"), p.Color("gray")]
+
         for r in range(self.DIMENSION):
             for c in range(self.DIMENSION):
-                color = colors[((r+c)%2)]
+                color = self.colors[((r+c)%2)]
                 p.draw.rect(screen, color, p.Rect(c*self.SQ_SIZE, r*self.SQ_SIZE, self.SQ_SIZE, self.SQ_SIZE))
 
 
     def drawPieces(self,screen, board):
         for r in range(self.DIMENSION):
             for c in range(self.DIMENSION):
-                piece = board[r][c]
+                piece = self.decodePiece(board[r][c])
                 if piece != "--":
                     screen.blit(self.IMAGES[piece], p.Rect(c*self.SQ_SIZE, r*self.SQ_SIZE, self.SQ_SIZE, self.SQ_SIZE))
 
@@ -50,3 +70,63 @@ class Graphic:
     def drawGameState(self,screen, gs):
         self.drawBoard(screen)
         self.drawPieces(screen, gs.board)
+
+    def decodePiece(self,c):
+        if (c == 0): return '--'
+        if (c == 1): return 'crate'
+        if (c == 2): return 'hider'
+        if (c == 3): return 'seeker'
+
+    def moveUp(self):
+        if self.seekerRowPos == 0 :
+            return
+        self.gs.board[self.seekerRowPos][c1] = 0
+        self.gs.board[r1-1][c1] = 3
+        self.seekerColPos =
+
+    def moveDown(self, r1,c1):
+        if r1 == 14 :
+            return
+        self.gs.board[r1][c1] = 0
+        self.gs.board[r1+1][c1] = 3
+
+    def moveRight(self, r1,c1):
+        if c1 == 14 :
+            return
+        self.gs.board[r1][c1] = 0
+        self.gs.board[r1][c1+1] = 3
+
+    def moveLeft(self, r1,c1):
+        if c1 == 0 :
+            return
+        self.gs.board[r1][c1] = 0
+        self.gs.board[r1][c1-1] = 3
+
+    def moveUpRight(self, r1,c1):
+        if r1 == 0 :
+            return
+        self.gs.board[r1][c1] = 0
+        self.gs.board[r1-1][c1+1] = 3
+
+    def moveUpLeft(self, r1,c1):
+        if r1 == 0 :
+            return
+        self.gs.board[r1][c1] = 0
+        self.gs.board[r1-1][c1-1] = 3
+
+    def moveDownRight(self, r1,c1):
+        if c1 == 0 :
+            return
+        self.gs.board[r1][c1] = 0
+        self.gs.board[r1+1][c1+1] = 3
+
+    def moveDownLeft(self, r1,c1):
+        if c1 == 0 :
+            return
+        self.gs.board[r1][c1] = 0
+        self.gs.board[r1+1][c1-1] = 3
+
+def gameOver(r1,c1,r2,c2):
+    if r1 == r2 and c1 == c2:
+        True
+    return False
