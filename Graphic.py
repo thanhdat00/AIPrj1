@@ -16,13 +16,13 @@ class Graphic:
                 # 0.Left  1.Right 2.Down 3.Up   4.Down-Right 5.Up-Right   6.Up-Left   7.Down-Left
     gs = None
 
+    # init component
     def __init__(self, map, seekerRowPos, seekerColPos):
         p.init()
         self.seekerRowPos = seekerRowPos
         self.seekerColPos = seekerColPos
         self.gs = GameEngine.GameState(map)
         self.loadImage()
-
 
     def run(self):
         screen = p.display.set_mode((self.WIDTH, self.HEIGHT))
@@ -38,26 +38,20 @@ class Graphic:
             self.drawGameState(screen, self.gs)
             clock.tick(self.MAX_SPF)
             p.display.flip()
+            self.moveRight()
             time.sleep(0.5)
 
-
-
     def loadImage(self):
-
-
          pieces =['hider' , 'seeker', 'crate']
          for piece in pieces:
             self.IMAGES[piece] = p.transform.scale(p.image.load("Images/" + piece + ".png"), (self.SQ_SIZE, self.SQ_SIZE))
 
-
-
-    def drawBoard(self,screen):
+    def drawBoard(self, screen):
 
         for r in range(self.DIMENSION):
             for c in range(self.DIMENSION):
                 color = self.colors[((r+c)%2)]
                 p.draw.rect(screen, color, p.Rect(c*self.SQ_SIZE, r*self.SQ_SIZE, self.SQ_SIZE, self.SQ_SIZE))
-
 
     def drawPieces(self,screen, board):
         for r in range(self.DIMENSION):
@@ -65,7 +59,6 @@ class Graphic:
                 piece = self.decodePiece(board[r][c])
                 if piece != "--":
                     screen.blit(self.IMAGES[piece], p.Rect(c*self.SQ_SIZE, r*self.SQ_SIZE, self.SQ_SIZE, self.SQ_SIZE))
-
 
     def drawGameState(self,screen, gs):
         self.drawBoard(screen)
@@ -80,51 +73,62 @@ class Graphic:
     def moveUp(self):
         if self.seekerRowPos == 0 :
             return
-        self.gs.board[self.seekerRowPos][c1] = 0
-        self.gs.board[r1-1][c1] = 3
-        self.seekerColPos =
+        self.gs.board[self.seekerRowPos][self.seekerColPos] = 0
+        self.gs.board[self.seekerRowPos-1][self.seekerColPos] = 3
+        self.seekerRowPos = self.seekerRowPos - 1
 
-    def moveDown(self, r1,c1):
-        if r1 == 14 :
+    def moveDown(self):
+        if self.seekerRowPos == 14 :
             return
-        self.gs.board[r1][c1] = 0
-        self.gs.board[r1+1][c1] = 3
+        self.gs.board[self.seekerRowPos][self.seekerColPos] = 0
+        self.gs.board[self.seekerRowPos+1][self.seekerColPos] = 3
+        self.seekerRowPos = self.seekerRowPos + 1
 
-    def moveRight(self, r1,c1):
-        if c1 == 14 :
+    def moveRight(self):
+        if self.seekerColPos == 14 :
             return
-        self.gs.board[r1][c1] = 0
-        self.gs.board[r1][c1+1] = 3
+        self.gs.board[self.seekerRowPos][self.seekerColPos] = 0
+        self.gs.board[self.seekerRowPos][self.seekerColPos + 1] = 3
+        self.seekerColPos = self.seekerColPos + 1
 
-    def moveLeft(self, r1,c1):
-        if c1 == 0 :
+    def moveLeft(self):
+        if self.seekerColPos == 0 :
             return
-        self.gs.board[r1][c1] = 0
-        self.gs.board[r1][c1-1] = 3
+        self.gs.board[self.seekerRowPos][self.seekerColPos] = 0
+        self.gs.board[self.seekerRowPos][self.seekerColPos - 1] = 3
+        self.seekerColPos = self.seekerColPos -1
 
-    def moveUpRight(self, r1,c1):
-        if r1 == 0 :
+    def moveUpRight(self):
+        if self.seekerRowPos == 0 :
             return
-        self.gs.board[r1][c1] = 0
-        self.gs.board[r1-1][c1+1] = 3
+        self.gs.board[self.seekerRowPos][self.seekerColPos] = 0
+        self.gs.board[self.seekerRowPos-1][self.seekerColPos+1] = 3
+        self.seekerRowPos = self.seekerRowPos - 1
+        self.seekerColPos = self.seekerColPos + 1
 
-    def moveUpLeft(self, r1,c1):
-        if r1 == 0 :
+    def moveUpLeft(self):
+        if self.seekerRowPos == 0 :
             return
-        self.gs.board[r1][c1] = 0
-        self.gs.board[r1-1][c1-1] = 3
+        self.gs.board[self.seekerRowPos][self.seekerColPos] = 0
+        self.gs.board[self.seekerRowPos-1][self.seekerColPos-1] = 3
+        self.seekerRowPos = self.seekerRowPos - 1
+        self.seekerColPos = self.seekerColPos - 1
 
-    def moveDownRight(self, r1,c1):
-        if c1 == 0 :
+    def moveDownRight(self):
+        if self.seekerColPos == 0 :
             return
-        self.gs.board[r1][c1] = 0
-        self.gs.board[r1+1][c1+1] = 3
+        self.gs.board[self.seekerRowPos][self.seekerColPos] = 0
+        self.gs.board[self.seekerRowPos+1][self.seekerColPos+1] = 3
+        self.seekerRowPos = self.seekerRowPos + 1
+        self.seekerColPos = self.seekerColPos + 1
 
-    def moveDownLeft(self, r1,c1):
-        if c1 == 0 :
+    def moveDownLeft(self):
+        if self.seekerColPos == 0 :
             return
-        self.gs.board[r1][c1] = 0
-        self.gs.board[r1+1][c1-1] = 3
+        self.gs.board[self.seekerRowPos][self.seekerColPos] = 0
+        self.gs.board[self.seekerRowPos+1][self.seekerColPos-1] = 3
+        self.seekerRowPos = self.seekerRowPos + 1
+        self.seekerColPos = self.seekerColPos - 1
 
 def gameOver(r1,c1,r2,c2):
     if r1 == r2 and c1 == c2:

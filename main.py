@@ -35,7 +35,7 @@ for i in range(n):
     for j in range(m):
         map[i][j]  = int(input[j])
         if map[i][j] == 3:
-            seekerColPos = i
+            seekerRowPos = i
             seekerColPos = j
         if map[i][j] == 2:
             hiderRowPos = i
@@ -49,5 +49,5 @@ for i in range(n):
        
 fileObject.close()
 
-graphic = Graphic.Graphic(map)
+graphic = Graphic.Graphic(map, seekerRowPos, seekerColPos)
 graphic.run()
