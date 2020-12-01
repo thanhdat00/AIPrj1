@@ -1,4 +1,5 @@
 import Block
+import Graphic
 
 fileObject = open("test1.txt")
 input = fileObject.readline()
@@ -35,3 +36,5 @@ for i in range(n-1):
 
        
 fileObject.close()
+
+graphic = Graphic.Graphic()
