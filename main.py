@@ -41,13 +41,16 @@ for i in range(n):
             hiderRowPos = i
             hiderColPos = j
 
-for i in range(n):
-    for j in range (m):
-        print(map[i][j])
-    print("------")
+# for i in range(n):
+#     for j in range (m):
+#         print(map[i][j])
+#     print("------")
+
+print(seekerRowPos)
+print(seekerColPos)
 
        
 fileObject.close()
 
-graphic = Graphic.Graphic(map, seekerRowPos, seekerColPos)
+graphic = Graphic.Graphic(map, seekerRowPos, seekerColPos, hiderRowPos, hiderColPos)
 graphic.run()

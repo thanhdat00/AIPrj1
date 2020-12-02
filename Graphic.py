@@ -1,6 +1,8 @@
 import pygame as p
 import GameEngine
 import time
+from tkinter import *
+from tkinter import messagebox
 import Block
 
 class Graphic:
@@ -12,17 +14,23 @@ class Graphic:
     colors = [p.Color("white"), p.Color("gray")]
     seekerRowPos = -1
     seekerColPos = -1
+    hiderRowPos = -1
+    hiderColPos = -1
     direction = [[0,-1], [0,1], [-1,0], [1,0], [1,1],      [-1,1] ,        [-1,-1],  [1,-1]]
                 # 0.Left  1.Right 2.Down 3.Up   4.Down-Right 5.Up-Right   6.Up-Left   7.Down-Left
     gs = None
+    leftOrRight = 0
 
     # init component
-    def __init__(self, map, seekerRowPos, seekerColPos):
+    def __init__(self, map, seekerRowPos, seekerColPos, hiderRowPos, hiderColPos):
         p.init()
         self.seekerRowPos = seekerRowPos
         self.seekerColPos = seekerColPos
+        self.hiderRowPos = hiderRowPos
+        self.hiderColPos = hiderColPos
         self.gs = GameEngine.GameState(map)
         self.loadImage()
+        visited = set()
 
     def run(self):
         screen = p.display.set_mode((self.WIDTH, self.HEIGHT))
@@ -38,8 +46,29 @@ class Graphic:
             self.drawGameState(screen, self.gs)
             clock.tick(self.MAX_SPF)
             p.display.flip()
+            if self.gameOver():
+                Tk().wm_withdraw()
+                messagebox.showinfo('Game Over')
+            else :
+                if self.leftOrRight == 0 :
+                    self.searchRight()
+                else :
+                    self.searchLeft()
+            time.sleep(0.2)
+
+    def searchRight(self):
+        if self.seekerColPos != 14:
             self.moveRight()
-            time.sleep(0.5)
+        elif self.seekerColPos == 14:
+            self.moveDown()
+            self.leftOrRight = 1
+
+    def searchLeft(self):
+        if self.seekerColPos != 0:
+            self.moveLeft()
+        elif self.seekerColPos == 0:
+            self.moveDown()
+            self.leftOrRight = 0
 
     def loadImage(self):
          pieces =['hider' , 'seeker', 'crate']
@@ -130,7 +159,7 @@ class Graphic:
         self.seekerRowPos = self.seekerRowPos + 1
         self.seekerColPos = self.seekerColPos - 1
 
-def gameOver(r1,c1,r2,c2):
-    if r1 == r2 and c1 == c2:
-        True
-    return False
+    def gameOver(self):
+        if self.seekerColPos == self.hiderColPos and self.seekerRowPos == self.hiderRowPos:
+            return True
+        return False
