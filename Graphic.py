@@ -1,5 +1,7 @@
 import pygame as p
 import GameEngine
+from queue import Queue
+
 import time
 from tkinter import *
 from tkinter import messagebox
@@ -70,8 +72,86 @@ class Graphic:
             self.moveDown()
             self.leftOrRight = 0
 
+    #check if sight is blocked from (x1,y1) to (x2,y2)
+    def sightBlocked(self, x1, y1, x2, y2):
+        queue = Queue(maxsize=60)
+        visited = []
+        queue.put((x1,y1))
+
+        while not queue.empty():
+           cell = queue.get()
+           visited.append(cell)
+
+           if cell[0] == x2 and cell[1]== y2:
+               return False
+           distance = self.distance(cell[0],cell[1],x2,y2)
+           if (self.lineIntersectsCell(x1+0.5,y1+0.5,x2+0.5,y2+0.5,cell[0],cell[1])):
+                if (self.inMap(cell[0],cell[1]) and self.gs.board[cell[0]][cell[1]] != 1):
+                    for i in range(8):
+                        delta = self.direction[i]
+                        nx = delta[0] + cell[0]
+                        ny = delta[1] + cell[1]
+                        #not visit and closer
+                        if (not visited.__contains__((nx,ny))  and self.distance(nx,ny,x2,y2)<= distance):
+                            queue.put((nx,ny))
+        #default sight is blocked
+        return True
+
+
+
+
+
     def heuristic(self):
-       return
+        h = []
+        for i in range (self.MAX_SPF):
+            r = []
+            for j in range(self.MAX_SPF):
+                r.append(0)
+            h.append(r)
+
+        for i in range(self.MAX_SPF):
+            for j in range(self.MAX_SPF):
+                if (self.gs.board[i][j] != 1):
+                    x1 = max(0,i-3)
+                    y1 = max(0,j-3)
+                    x2 = min(self.MAX_SPF,i+4)
+                    y2 = min(self.MAX_SPF,j+4)
+                    for x in range (x1,x2):
+                        for y in range (y1,y2):
+                            if (x!=i and y!=j):
+                                if (self.gs.board[x][y] != 1):
+                                    if (not self.sightBlocked(i,j,x,y)):
+                                        h[i][j] = h[i][j] + 1
+                    #right
+                    for t in range(j+1,y2):
+                        if (self.gs.board[i][t] != 1):
+                            h[i][j] = h[i][j] +1
+                        else:
+                            break
+
+                    #left
+                    for t in range(j-1,y1-1,-1):
+                        if (self.gs.board[i][t] != 1):
+                            h[i][j] = h[i][j] + 1
+                        else:
+                            break
+
+                    #down
+                    for t in range(i+1,x2):
+                        if (self.gs.board[t][j] != 1):
+                            h[i][j] = h[i][j] + 1
+                        else:
+                            break
+
+                    #up
+                    for t in range(i-1,x1-1,-1):
+                        if (self.gs.board[t][j] != 1):
+                            h[i][j] = h[i][j] +1
+                        else:
+                            break
+
+
+        return h
 
     def quickMove(self, desRow, desCol):
         return
@@ -170,5 +250,30 @@ class Graphic:
 
     def gameOver(self):
         if self.seekerColPos == self.hiderColPos and self.seekerRowPos == self.hiderRowPos:
+            return True
+        return False
+
+    def distance(self, x1, y1, x2, y2):
+        return pow(x2-x1,2) + pow(y2-y1,2)
+
+    def lineIntersectsCell(self, x1, y1, x2, y2, rx, ry):
+        rw = 1
+        rh = 1
+        left = self.lineIntersectLine(x1,y1,x2,y2,rx,ry,rx,ry+rh)
+        right = self.lineIntersectLine(x1,y1,x2,y2,rx+rw,ry,rx+rw,ry+rh)
+        top = self.lineIntersectLine(x1,y1,x2,y2,rx,ry,rx+rw,ry)
+        bottom = self.lineIntersectLine(x1,y1,x2,y2,rx,ry+rh,rx+rw,ry+rh)
+
+        return (left or right or top or bottom)
+
+    def inMap(self, x, y):
+        if (x < 0 or y < 0 or x >= 15 or y >= 15):
+            return False
+        return  True
+
+    def lineIntersectLine(self, x1, y1, x2, y2, x3, y3, x4, y4):
+        uA = ((x4-x3)*(y1-y3) - (y4-y3)*(x1-x3)) / ((y4-y3)*(x2-x1) - (x4-x3)*(y2-y1))
+        uB = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / ((y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1))
+        if (uA >= 0 and  uA <= 1 and  uB >= 0  and  uB <= 1):
             return True
         return False
