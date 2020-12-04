@@ -1,11 +1,14 @@
 import pygame as p
 import GameEngine
 from queue import Queue
+import numpy as np
 
 import time
 from tkinter import *
 from tkinter import messagebox
 import Block
+
+checked = np.zeros((15,15))
 
 class Graphic:
     WIDTH = HEIGHT = 512
@@ -22,6 +25,7 @@ class Graphic:
                 # 0.Left  1.Right 2.Down 3.Up   4.Down-Right 5.Up-Right   6.Up-Left   7.Down-Left
     gs = None
     leftOrRight = 0
+
 
     # init component
     def __init__(self, map, seekerRowPos, seekerColPos, hiderRowPos, hiderColPos):
@@ -97,10 +101,6 @@ class Graphic:
         #default sight is blocked
         return True
 
-
-
-
-
     def heuristic(self):
         h = []
         for i in range (self.MAX_SPF):
@@ -160,19 +160,133 @@ class Graphic:
         return abs(r1 - r2) + abs(c1 - c2)
 
     def observed(self):
-        visited = []
+        checked[self.seekerRowPos][self.seekerColPos] = 1
+        for i in range(self.seekerRowPos - 3, self.seekerRowPos + 4):
+            for j in range(self.seekerColPos - 3, self.seekerColPos + 4):
+                if self.inMap(i,j):
+                    if self.gs.board[i][j] != 1:
+                        if self.gs.board[i][j] == 2:
+                            return i,j
+                        else:
+                            if checked[i][j] != 1:
+                                if self.notBlock(i,j):
+                                    checked[i][j]=1
+        return None
 
+    def printChecked(self):
+        # for i in range(15):
+        #     for j in range(15):
+        #         print(checked[i][j])
         for i in range(15):
-            row = []
             for j in range(15):
-                row.append(0)
-            visited.append(row)
+                print("%3d " % checked[i][j], end='')
+            print()
 
-        i = self.seekerRowPos
-        j = self.seekerColPos
+    def printBoard(self):
+        # for i in range(15):
+        #     for j in range(15):
+        #         print(checked[i][j])
+        for i in range(15):
+            for j in range(15):
+                print("%3d " % self.gs.board[i][j], end='')
+            print()
 
-        return
+    def notBlock(self, x, y):
+        # hang ngang
+        if x == self.seekerRowPos:
+            dis = abs(self.seekerColPos - y) -1
+            #ben phai
+            if y > self.seekerColPos:
+                for i in range (dis):
+                    if self.gs.board[x][self.seekerColPos + i +1] == 1:
+                        return False
+            #ben trai
+            if y < self.seekerColPos:
+                for i in range (dis):
+                    if self.gs.board[x][self.seekerColPos - (i+1)] == 1:
+                        return False
+        #hang doc
+        if y == self.seekerColPos:
+            dis = abs(self.seekerRowPos - x) - 1
+            #ben tren
+            if x < self.seekerRowPos:
+                for i in range(dis):
+                    if self.gs.board[self.seekerRowPos - (i+1)][y] == 1:
+                        return False
+            #ben duoi
+            if x > self.seekerRowPos:
+                for i in range(dis):
+                    if self.gs.board[self.seekerRowPos + i+1][y] == 1:
+                        return False
+        #duong cheo
+        if abs(self.seekerRowPos - x) == abs(self.seekerColPos - y):
+            dis = abs(self.seekerRowPos - x) -1
+            #goc phan tu thu 1
+            if self.seekerRowPos > x and self.seekerColPos < y:
+                for i in range(dis):
+                    if self.gs.board[self.seekerRowPos - (i+1)][self.seekerColPos + i+1] == 1:
+                        return False
+            #goc phan tu thu 2
+            if self.seekerRowPos > x and self.seekerColPos > y:
+                for i in range(dis):
+                    if self.gs.board[self.seekerRowPos - (i+1)][self.seekerColPos - (i+1)] == 1:
+                        return False
+            #goc phan tu thu 3
+            if self.seekerRowPos < x and self.seekerColPos > y:
+                for i in range(dis):
+                    if self.gs.board[self.seekerRowPos + (i+1)][self.seekerColPos - (i+1)] == 1:
+                        return False
+            #goc phan tu thu 4
+            if self.seekerRowPos < x and self.seekerColPos < y:
+                for i in range(dis):
+                    if self.gs.board[self.seekerRowPos + (i+1)][self.seekerColPos + i+1] == 1:
+                        return False
+        #truong hop dac biet
+        #7
+        if abs(self.seekerRowPos - x) == 1 and abs(self.seekerColPos - y) == 2:
+            colDis = (self.seekerColPos + y) // 2
+            if self.gs.board[self.seekerRowPos][colDis] == 1 and self.gs.board[x][colDis] == 1:
+                return False
+        #5
+        if abs(self.seekerRowPos - x) == 2 and abs(self.seekerColPos - y) == 1:
+            if self.seekerRowPos > x:
+                if self.gs.board[self.seekerRowPos-1][self.seekerColPos] and self.gs.board[x-1][y] == 1:
+                    return False
+            if self.seekerRowPos < x:
+                if self.gs.board[self.seekerRowPos+1][self.seekerColPos] and self.gs.board[x-1][y] == 1:
+                    return False
+        #10
+        if abs(self.seekerRowPos - x) == 3 and abs(self.seekerColPos - y) == 1:
+            if self.seekerRowPos > x:
+                if self.gs.board[self.seekerRowPos-1][self.seekerColPos] == 1 or self.gs.board[self.seekerRowPos-2][y] == 1:
+                    return False
+            if self.seekerRowPos < x:
+                if self.gs.board[self.seekerRowPos+1][self.seekerColPos] == 1 or self.gs.board[self.seekerRowPos+2][y] == 1:
+                    return False
+        #11
+        if abs(self.seekerRowPos - x) == 3 and abs(self.seekerColPos - y) == 2:
+            rowDis = abs(self.seekerRowPos + x) // 2
+            colDis = abs(self.seekerColPos + y) // 2
+            if self.gs.board[rowDis][colDis] == 1 or self.gs.board[rowDis+1][colDis] == 1:
+                return False
+        #14
+        if abs(self.seekerRowPos - x) == 1 and abs(self.seekerColPos - y) == 3:
+            if self.seekerColPos < y:
+                if self.gs.board[x][y-1] == 1 or self.gs.board[x-1][y-2] == 1:
+                    return False
+            if self.seekerColPos > y:
+                if self.gs.board[x][y+1] == 1 or self.gs.board[x-1][y+2] == 1:
+                    return False
+        #13
+        if abs(self.seekerRowPos - x) == 2 and abs(self.seekerColPos - y) == 3:
+            if self.seekerColPos < y:
+                if self.gs.board[x-1][y-1] == 1 or self.gs.board[x-1][y-2] == 1:
+                    return False
+            if self.seekerColPos > y:
+                if self.gs.board[x-1][y+1] == 1 or self.gs.board[x-1][y+2] == 1:
+                    return False
 
+        return True
 
     def search(self):
         return

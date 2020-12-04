@@ -53,7 +53,10 @@ print(seekerColPos)
 fileObject.close()
 
 graphic = Graphic.Graphic(map, seekerRowPos, seekerColPos, hiderRowPos, hiderColPos)
-point = graphic.heuristic()
-for i in range(15):
-    print(point[i])
-graphic.run()
+# point = graphic.heuristic()
+# for i in range(15):
+#     print(point[i])
+#graphic.run()
+graphic.observed()
+#graphic.printBoard()
+graphic.printChecked()
