@@ -76,6 +76,24 @@ class Graphic:
     def quickMove(self, desRow, desCol):
         return
 
+    def distance(self, r1,c1, r2,c2):
+        return abs(r1 - r2) + abs(c1 - c2)
+
+    def observed(self):
+        visited = []
+
+        for i in range(15):
+            row = []
+            for j in range(15):
+                row.append(0)
+            visited.append(row)
+
+        i = self.seekerRowPos
+        j = self.seekerColPos
+
+        return
+
+
     def search(self):
         return
 
