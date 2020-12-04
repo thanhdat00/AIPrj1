@@ -1,14 +1,16 @@
 import pygame as p
 import GameEngine
 from queue import Queue
-import numpy as np
+#import numpy as np
+import AStar as astar
 
 import time
 from tkinter import *
 from tkinter import messagebox
 import Block
 
-checked = np.zeros((15,15))
+#checked = np.zeros((15,15))
+checked =  [[0 for x in range(15)] for y in range(15)]
 
 class Graphic:
     WIDTH = HEIGHT = 512
@@ -19,23 +21,27 @@ class Graphic:
     colors = [p.Color("white"), p.Color("gray")]
     seekerRowPos = -1
     seekerColPos = -1
-    hiderRowPos = -1
-    hiderColPos = -1
+    hiderList = []
     direction = [[0,-1], [0,1], [-1,0], [1,0], [1,1],      [-1,1] ,        [-1,-1],  [1,-1]]
                 # 0.Left  1.Right 2.Down 3.Up   4.Down-Right 5.Up-Right   6.Up-Left   7.Down-Left
     gs = None
     leftOrRight = 0
-
+    stack = []
+    qStack = []
+    count = 1
+    qCount = 1
+    foundHider = None
+    goBack = False
 
     # init component
-    def __init__(self, map, seekerRowPos, seekerColPos, hiderRowPos, hiderColPos):
+    def __init__(self, map, seekerRowPos, seekerColPos, hiderList,stack):
         p.init()
         self.seekerRowPos = seekerRowPos
         self.seekerColPos = seekerColPos
-        self.hiderRowPos = hiderRowPos
-        self.hiderColPos = hiderColPos
+        self.hiderList = hiderList
         self.gs = GameEngine.GameState(map)
         self.loadImage()
+        self.stack = stack
 
     def run(self):
         screen = p.display.set_mode((self.WIDTH, self.HEIGHT))
@@ -51,16 +57,17 @@ class Graphic:
             self.drawGameState(screen, self.gs)
             clock.tick(self.MAX_SPF)
             p.display.flip()
-            # if self.gameOver():
-            #     return
-            #     # Tk().wm_withdraw()
-            #     # messagebox.showinfo('Game Over')
-            # else :
-            #     if self.leftOrRight == 0 :
-            #         self.searchRight()
-            #     else :
-            #         self.searchLeft()
-            # time.sleep(0.2)
+            if self.gameOver():
+                return
+                # Tk().wm_withdraw()
+                # messagebox.showinfo('Game Over')
+            else :
+
+                if (self.foundHider == None):
+                    self.seekerMove()
+                else:
+                    self.seekerQuickMove()
+            time.sleep(0.2)
 
     def searchRight(self):
         if self.seekerColPos != 14:
@@ -76,84 +83,11 @@ class Graphic:
             self.moveDown()
             self.leftOrRight = 0
 
-    #check if sight is blocked from (x1,y1) to (x2,y2)
-    def sightBlocked(self, x1, y1, x2, y2):
-        queue = Queue(maxsize=60)
-        visited = []
-        queue.put((x1,y1))
-
-        while not queue.empty():
-           cell = queue.get()
-           visited.append(cell)
-
-           if cell[0] == x2 and cell[1]== y2:
-               return False
-           distance = self.distance(cell[0],cell[1],x2,y2)
-           if (self.lineIntersectsCell(x1+0.5,y1+0.5,x2+0.5,y2+0.5,cell[0],cell[1])):
-                if (self.inMap(cell[0],cell[1]) and self.gs.board[cell[0]][cell[1]] != 1):
-                    for i in range(8):
-                        delta = self.direction[i]
-                        nx = delta[0] + cell[0]
-                        ny = delta[1] + cell[1]
-                        #not visit and closer
-                        if (not visited.__contains__((nx,ny))  and self.distance(nx,ny,x2,y2)<= distance):
-                            queue.put((nx,ny))
-        #default sight is blocked
-        return True
-
-    def heuristic(self):
-        h = []
-        for i in range (self.MAX_SPF):
-            r = []
-            for j in range(self.MAX_SPF):
-                r.append(0)
-            h.append(r)
-
-        for i in range(self.MAX_SPF):
-            for j in range(self.MAX_SPF):
-                if (self.gs.board[i][j] != 1):
-                    x1 = max(0,i-3)
-                    y1 = max(0,j-3)
-                    x2 = min(self.MAX_SPF,i+4)
-                    y2 = min(self.MAX_SPF,j+4)
-                    for x in range (x1,x2):
-                        for y in range (y1,y2):
-                            if (x!=i and y!=j):
-                                if (self.gs.board[x][y] != 1):
-                                    if (not self.sightBlocked(i,j,x,y)):
-                                        h[i][j] = h[i][j] + 1
-                    #right
-                    for t in range(j+1,y2):
-                        if (self.gs.board[i][t] != 1):
-                            h[i][j] = h[i][j] +1
-                        else:
-                            break
-
-                    #left
-                    for t in range(j-1,y1-1,-1):
-                        if (self.gs.board[i][t] != 1):
-                            h[i][j] = h[i][j] + 1
-                        else:
-                            break
-
-                    #down
-                    for t in range(i+1,x2):
-                        if (self.gs.board[t][j] != 1):
-                            h[i][j] = h[i][j] + 1
-                        else:
-                            break
-
-                    #up
-                    for t in range(i-1,x1-1,-1):
-                        if (self.gs.board[t][j] != 1):
-                            h[i][j] = h[i][j] +1
-                        else:
-                            break
-
-
-        return h
 
     def quickMove(self, desRow, desCol):
+        self.qCount = 1
+        self.qStack = astar.astar_search(self.gs.board,(self.seekerRowPos,self.seekerColPos),(desRow,desCol))
+        self.qStack.insert(0,(self.seekerRowPos,self.seekerColPos))
         return
 
     def distance(self, r1,c1, r2,c2):
@@ -166,7 +100,7 @@ class Graphic:
                 if self.inMap(i,j):
                     if self.gs.board[i][j] != 1:
                         if self.gs.board[i][j] == 2:
-                            return i,j
+                            return (i,j)
                         else:
                             if checked[i][j] != 1:
                                 if self.notBlock(i,j):
@@ -381,7 +315,7 @@ class Graphic:
         self.seekerColPos = self.seekerColPos - 1
 
     def gameOver(self):
-        if self.seekerColPos == self.hiderColPos and self.seekerRowPos == self.hiderRowPos:
+        if len(self.hiderList) == 0:
             return True
         return False
 
@@ -409,3 +343,40 @@ class Graphic:
         if (uA >= 0 and  uA <= 1 and  uB >= 0  and  uB <= 1):
             return True
         return False
+
+    def seekerMove(self):
+        p = self.observed()
+        if (p != None ):
+            self.foundHider = p
+            self.quickMove(p[0],p[1])
+            return
+        x = self.stack[self.count - 1][0]
+        y = self.stack[self.count - 1][1]
+        self.seekerRowPos = self.stack[self.count][0]
+        self.seekerColPos = self.stack[self.count][1]
+        self.gs.board[x][y] = 0
+        self.gs.board[self.seekerRowPos][self.seekerColPos] = 3
+        if (self.count < len(self.stack)):
+            self.count +=1
+
+    def seekerQuickMove(self):
+        x = self.qStack[self.qCount - 1][0]
+        y = self.qStack[self.qCount - 1][1]
+        self.seekerRowPos = self.qStack[self.qCount][0]
+        self.seekerColPos = self.qStack[self.qCount][1]
+        self.gs.board[x][y] = 0
+        self.gs.board[self.seekerRowPos][self.seekerColPos] = 3
+        if (self.qCount < len(self.qStack)):
+            self.qCount += 1
+        if (self.foundHider == (self.seekerRowPos,self.seekerColPos) and not self.goBack ):
+            self.hiderList.remove(self.foundHider)
+            self.foundHider = (self.stack[self.count-1][0],self.stack[self.count-1][1])
+            self.quickMove(self.foundHider[0],self.foundHider[1])
+            self.goBack = True
+        else:
+            if ((self.seekerRowPos, self.seekerColPos) == (self.stack[self.count-1][0],self.stack[self.count-1][1]) and self.goBack):
+                self.foundHider = None
+                self.goBack = False
+
+
+
