@@ -8,7 +8,7 @@ seekerColPos = -1
 
 hiderList = []
 
-fileObject = open("test1.txt")
+fileObject = open("Map3.txt")
 input = fileObject.readline()
 
 para = input.split(" ")

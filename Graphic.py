@@ -3,6 +3,7 @@ import GameEngine
 from queue import Queue
 #import numpy as np
 import AStar as astar
+import random
 
 import time
 from tkinter import *
@@ -32,6 +33,7 @@ class Graphic:
     qCount = 1
     foundHider = None
     goBack = False
+    step = 0
 
     # init component
     def __init__(self, map, seekerRowPos, seekerColPos, hiderList,stack):
@@ -62,11 +64,13 @@ class Graphic:
                 # Tk().wm_withdraw()
                 # messagebox.showinfo('Game Over')
             else :
-
+                # if (self.step > 0 and self.step % 5 == 0):
+                #     self.announce()
                 if (self.foundHider == None):
                     self.seekerMove()
                 else:
                     self.seekerQuickMove()
+                self.step += 1
             time.sleep(0.2)
 
     def searchRight(self):
@@ -99,8 +103,10 @@ class Graphic:
             for j in range(self.seekerColPos - 3, self.seekerColPos + 4):
                 if self.inMap(i,j):
                     if self.gs.board[i][j] != 1:
-                        if self.gs.board[i][j] == 2:
-                            return (i,j)
+                        if self.gs.board[i][j] == 2 :
+                            return (i,j,2)
+                        if self.gs.board[i][j] == 4:
+                            return (i,j,4)
                         else:
                             if checked[i][j] != 1:
                                 if self.notBlock(i,j):
@@ -345,21 +351,55 @@ class Graphic:
         return False
 
     def seekerMove(self):
+        if (self.count > len(self.stack)):
+            self.count = 1
+            self.quickMove(self.stack[0][0],self.stack[0][1])
+            self.foundHider = (self.stack[0][0],self.stack[0][1],0)
+            self.goBack = True
+            return
         p = self.observed()
         if (p != None ):
             self.foundHider = p
             self.quickMove(p[0],p[1])
+            self.goBack = False
             return
+        else:
+            for i in range(self.count,len(self.stack)):
+                x = self.stack[i][0]
+                y = self.stack[i][1]
+                if (checked[x][y] == 0):
+
+                    if ((x,y) in self.hiderList):
+                        self.foundHider = (x, y, 2)
+                        self.goBack = False
+                    else:
+                        self.goBack = True
+                        self.foundHider = (x, y, 0)
+                    self.count = i
+                    self.quickMove(x,y)
+                    break
         x = self.stack[self.count - 1][0]
         y = self.stack[self.count - 1][1]
-        self.seekerRowPos = self.stack[self.count][0]
-        self.seekerColPos = self.stack[self.count][1]
+        if (self.foundHider == None):
+            self.seekerRowPos = self.stack[self.count][0]
+            self.seekerColPos = self.stack[self.count][1]
         self.gs.board[x][y] = 0
         self.gs.board[self.seekerRowPos][self.seekerColPos] = 3
         if (self.count < len(self.stack)):
             self.count +=1
 
     def seekerQuickMove(self):
+
+        if (self.qCount >= len(self.qStack)):
+            return
+        if (self.foundHider == None):
+            p = self.observed() #(X,Y,VALUE)
+            if (p != None ):
+                self.foundHider = p
+                self.quickMove(p[0],p[1])
+                self.goBack = False
+                return
+
         x = self.qStack[self.qCount - 1][0]
         y = self.qStack[self.qCount - 1][1]
         self.seekerRowPos = self.qStack[self.qCount][0]
@@ -368,15 +408,25 @@ class Graphic:
         self.gs.board[self.seekerRowPos][self.seekerColPos] = 3
         if (self.qCount < len(self.qStack)):
             self.qCount += 1
-        if (self.foundHider == (self.seekerRowPos,self.seekerColPos) and not self.goBack ):
-            self.hiderList.remove(self.foundHider)
-            self.foundHider = (self.stack[self.count-1][0],self.stack[self.count-1][1])
-            self.quickMove(self.foundHider[0],self.foundHider[1])
+        if (self.foundHider == (self.seekerRowPos,self.seekerColPos,2) and not self.goBack ):
+            self.hiderList.remove((self.foundHider[0],self.foundHider[1]))
             self.goBack = True
+            self.foundHider = None
+
+
         else:
             if ((self.seekerRowPos, self.seekerColPos) == (self.stack[self.count-1][0],self.stack[self.count-1][1]) and self.goBack):
                 self.foundHider = None
                 self.goBack = False
+
+    def announce(self):
+        for hider in self.hiderList:
+            x = random.randint(max(0, hider[0] - 3), min(14,hider[0]+3))
+            y = random.randint(max(0, hider[1] - 3), min(14,hider[1]+3))
+            self.gs.board[x][y] = 4
+
+
+
 
 
 
