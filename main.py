@@ -5,10 +5,9 @@ from heapq import heappush, heappop
 # define position of seeker and hider
 seekerRowPos = -1
 seekerColPos = -1
-
 hiderList = []
 
-fileObject = open("Map3.txt")
+fileObject = open("Map5.txt")
 input = fileObject.readline()
 
 para = input.split(" ")
@@ -25,7 +24,6 @@ for i in range(n):
         row.append(-1)
     map.append(row)
 
-
 rowCount = 0;
 for i in range(n):
     input = fileObject.readline()
@@ -37,7 +35,6 @@ for i in range(n):
             seekerColPos = j
         if map[i][j] == 2:
             hiderList.append((i,j))
-
 
 fileObject.close()
 ##################################################
@@ -95,7 +92,6 @@ def dfs(x,y,d,count):
         if (foundPath): return
         step +=1
         stack.append((x,y,step))
-
 
 dfs(seekerRowPos,seekerColPos,d,0)
 

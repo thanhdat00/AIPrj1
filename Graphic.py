@@ -1,7 +1,5 @@
 import pygame as p
 import GameEngine
-from queue import Queue
-#import numpy as np
 import AStar as astar
 import random
 
@@ -34,6 +32,8 @@ class Graphic:
     foundHider = None
     goBack = False
     step = 0
+    turn = 1
+    seekerPoint = 0
 
     # init component
     def __init__(self, map, seekerRowPos, seekerColPos, hiderList,stack):
@@ -60,9 +60,8 @@ class Graphic:
             clock.tick(self.MAX_SPF)
             p.display.flip()
             if self.gameOver():
-                return
-                # Tk().wm_withdraw()
-                # messagebox.showinfo('Game Over')
+                Tk().wm_withdraw()
+                messagebox.showinfo('Point', self.seekerPoint)
             else :
                 # if (self.step > 0 and self.step % 5 == 0):
                 #     self.announce()
@@ -70,7 +69,26 @@ class Graphic:
                     self.seekerMove()
                 else:
                     self.seekerQuickMove()
-                self.step += 1
+                self.seekerPoint -= 1
+                if self.turn % 3 == 0:  #hider turn
+
+                    #super smart hider
+                    for i in range(len(self.hiderList)):
+                        self.gs.board[self.hiderList[i][0]][self.hiderList[i][1]] =0
+                        while True:
+                            x = random.choice( [self.hiderList[i][0] -1 , self.hiderList[i][0] +1] )
+                            y = random.choice( [self.hiderList[i][1] -1 , self.hiderList[i][1] +1] )
+                            if self.inMap(x,y):
+                                if self.gs.board[x][y] != 1:
+                                    if self.gs.board[x][y] != 2:
+                                        if self.gs.board[x][y] != 3:
+                                            break
+                        self.gs.board[x][y] = 2
+                        tmp = list(self.hiderList[i])
+                        tmp[0] = x
+                        tmp[1] = y
+                        self.hiderList[i] = tuple(tmp)
+                    self.turn += 1
             time.sleep(0.2)
 
     def searchRight(self):
@@ -90,7 +108,9 @@ class Graphic:
 
     def quickMove(self, desRow, desCol):
         self.qCount = 1
-        self.qStack = astar.astar_search(self.gs.board,(self.seekerRowPos,self.seekerColPos),(desRow,desCol))
+        self.qStack = astar.astar_search(self.gs.board,
+                                         (self.seekerRowPos,self.seekerColPos),
+                                         (desRow,desCol) )
         self.qStack.insert(0,(self.seekerRowPos,self.seekerColPos))
         return
 
@@ -259,6 +279,7 @@ class Graphic:
         if (c == 1): return 'crate'
         if (c == 2): return 'hider'
         if (c == 3): return 'seeker'
+        if (c == 4): return 'announce'
 
     def moveUp(self):
         if self.seekerRowPos == 0 :
@@ -325,33 +346,33 @@ class Graphic:
             return True
         return False
 
-    def distance(self, x1, y1, x2, y2):
-        return pow(x2-x1,2) + pow(y2-y1,2)
-
-    def lineIntersectsCell(self, x1, y1, x2, y2, rx, ry):
-        rw = 1
-        rh = 1
-        left = self.lineIntersectLine(x1,y1,x2,y2,rx,ry,rx,ry+rh)
-        right = self.lineIntersectLine(x1,y1,x2,y2,rx+rw,ry,rx+rw,ry+rh)
-        top = self.lineIntersectLine(x1,y1,x2,y2,rx,ry,rx+rw,ry)
-        bottom = self.lineIntersectLine(x1,y1,x2,y2,rx,ry+rh,rx+rw,ry+rh)
-
-        return (left or right or top or bottom)
+    # def lineIntersectsCell(self, x1, y1, x2, y2, rx, ry):
+    #     rw = 1
+    #     rh = 1
+    #     left = self.lineIntersectLine(x1,y1,x2,y2,rx,ry,rx,ry+rh)
+    #     right = self.lineIntersectLine(x1,y1,x2,y2,rx+rw,ry,rx+rw,ry+rh)
+    #     top = self.lineIntersectLine(x1,y1,x2,y2,rx,ry,rx+rw,ry)
+    #     bottom = self.lineIntersectLine(x1,y1,x2,y2,rx,ry+rh,rx+rw,ry+rh)
+    #
+    #     return (left or right or top or bottom)
 
     def inMap(self, x, y):
         if (x < 0 or y < 0 or x >= 15 or y >= 15):
             return False
         return  True
 
-    def lineIntersectLine(self, x1, y1, x2, y2, x3, y3, x4, y4):
-        uA = ((x4-x3)*(y1-y3) - (y4-y3)*(x1-x3)) / ((y4-y3)*(x2-x1) - (x4-x3)*(y2-y1))
-        uB = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / ((y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1))
-        if (uA >= 0 and  uA <= 1 and  uB >= 0  and  uB <= 1):
-            return True
-        return False
+    # def lineIntersectLine(self, x1, y1, x2, y2, x3, y3, x4, y4):
+    #     uA = ((x4-x3)*(y1-y3) - (y4-y3)*(x1-x3)) / ((y4-y3)*(x2-x1) - (x4-x3)*(y2-y1))
+    #     uB = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / ((y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1))
+    #     if (uA >= 0 and  uA <= 1 and  uB >= 0  and  uB <= 1):
+    #         return True
+    #     return False
 
     def seekerMove(self):
         if (self.count > len(self.stack)):
+            for i in range (15):
+                for j in range (15):
+                    checked[i][j] = 0
             self.count = 1
             self.quickMove(self.stack[0][0],self.stack[0][1])
             self.foundHider = (self.stack[0][0],self.stack[0][1],0)
@@ -387,9 +408,10 @@ class Graphic:
         self.gs.board[self.seekerRowPos][self.seekerColPos] = 3
         if (self.count < len(self.stack)):
             self.count +=1
+        self.turn+=1
 
     def seekerQuickMove(self):
-
+        self.turn +=1
         if (self.qCount >= len(self.qStack)):
             return
         if (self.foundHider == None):
@@ -409,11 +431,13 @@ class Graphic:
         if (self.qCount < len(self.qStack)):
             self.qCount += 1
         if (self.foundHider == (self.seekerRowPos,self.seekerColPos,2) and not self.goBack ):
-            self.hiderList.remove((self.foundHider[0],self.foundHider[1]))
+            for pHider in self.hiderList:
+                if (self.foundHider[0],self.foundHider[1]) == pHider:
+                    self.hiderList.remove((self.foundHider[0],self.foundHider[1]))
+                    self.seekerPoint += 20
+                    break
             self.goBack = True
             self.foundHider = None
-
-
         else:
             if ((self.seekerRowPos, self.seekerColPos) == (self.stack[self.count-1][0],self.stack[self.count-1][1]) and self.goBack):
                 self.foundHider = None
